@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-core-reconciliation-01-PLAN.md
-last_updated: "2026-03-12T19:57:11.178Z"
+stopped_at: Completed 01-core-reconciliation-03-PLAN.md
+last_updated: "2026-03-13T01:41:48.415Z"
 last_activity: 2026-03-12 — Roadmap created
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 3
   percent: 0
 ---
 
@@ -47,6 +47,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-core-reconciliation P01 | 2 | 2 tasks | 2 files |
+| Phase 01-core-reconciliation P03 | 8 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,8 @@ Recent decisions affecting current work:
 - [Phase 01-core-reconciliation]: Wave 0 stubs use @Disabled with TODO() bodies — compile, no false greens, satisfy Gradle test discovery
 - [Phase 01-core-reconciliation]: Android module unit test verification requires testDebugUnitTest (not test) due to variant ambiguity
 - [Phase 01-core-reconciliation]: ChannelStateImplPreservationTest extends ChannelStateImplTestBase for fixture reuse
+- [Phase 01-core-reconciliation]: setMessagesPreservingLocalOnly uses _messages.update { } (CAS) not value assignment — avoids two-emission flicker
+- [Phase 01-core-reconciliation]: setMessages kept with _messages.value = semantics for DB-seed path (OfflinePlugin already includes local-only in DB data)
 
 ### Pending Todos
 
@@ -74,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-12T19:57:11.176Z
-Stopped at: Completed 01-core-reconciliation-01-PLAN.md
+Last session: 2026-03-13T01:41:48.413Z
+Stopped at: Completed 01-core-reconciliation-03-PLAN.md
 Resume file: None
