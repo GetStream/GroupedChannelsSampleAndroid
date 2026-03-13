@@ -49,10 +49,12 @@ Plans:
   2. After a reconnect triggers a channel refresh via `SyncManager`, local-only messages that were in state before disconnect are still present after the channel re-loads — no separate reconnect code path is needed
   3. When OfflinePlugin is absent, local-only messages held in `state.messages.value` survive a `setMessagesPreservingLocalOnly` call (state acts as the source of truth)
   4. When OfflinePlugin is present, `RepositoryFacade.selectLocalOnlyMessagesForChannel(cid)` is called at preservation time and any DB-persisted local-only messages (`SYNC_NEEDED`, `FAILED_PERMANENTLY`) outside the current state page are included in the merged result
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md — Wave 1: Add selectOldestLoadedDateForChannel to ChannelDao + repository layer
+- [ ] 02-02-PLAN.md — Wave 2: Wire pagination branches (filteringOlderMessages/isFilteringNewerMessages) + updateDataForChannel reconnect path in ChannelLogicImpl
+- [ ] 02-03-PLAN.md — Wave 3: Add PaginationPreservation + ReconnectPreservation test classes to ChannelLogicImplTest
 
 ### Phase 3: Edge Cases and Tests
 **Goal**: The preservation mechanism is correct under search/jump-to-message context and validated by a test suite covering all core scenarios with no regressions
@@ -77,5 +79,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Reconciliation | 4/4 | Complete | 2026-03-13 |
-| 2. Full Trigger Coverage | 0/? | Not started | - |
+| 2. Full Trigger Coverage | 0/3 | Not started | - |
 | 3. Edge Cases and Tests | 0/? | Not started | - |
