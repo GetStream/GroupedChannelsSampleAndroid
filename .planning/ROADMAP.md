@@ -17,7 +17,7 @@ tests. No phase touches the legacy path or public API surface.
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Core Reconciliation** - Define `isLocalOnly()`, implement `setMessagesPreservingLocalOnly()`, wire into initial load path
-- [ ] **Phase 2: Full Trigger Coverage** - Apply preservation to pagination and reconnect triggers; handle DB-present and no-DB paths
+- [x] **Phase 2: Full Trigger Coverage** - Apply preservation to pagination and reconnect triggers; handle DB-present and no-DB paths (completed 2026-03-13)
 - [ ] **Phase 3: Edge Cases and Tests** - Search context preservation, cached message handling, and full test suite
 
 ## Phase Details
@@ -79,5 +79,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Reconciliation | 4/4 | Complete | 2026-03-13 |
-| 2. Full Trigger Coverage | 2/3 | In Progress|  |
+| 2. Full Trigger Coverage | 3/3 | Complete   | 2026-03-13 |
 | 3. Edge Cases and Tests | 0/? | Not started | - |
