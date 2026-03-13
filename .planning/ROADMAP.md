@@ -16,7 +16,7 @@ tests. No phase touches the legacy path or public API surface.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Core Reconciliation** - Define `isLocalOnly()`, implement `setMessagesPreservingLocalOnly()`, wire into initial load path
+- [x] **Phase 1: Core Reconciliation** - Define `isLocalOnly()`, implement `setMessagesPreservingLocalOnly()`, wire into initial load path
 - [ ] **Phase 2: Full Trigger Coverage** - Apply preservation to pagination and reconnect triggers; handle DB-present and no-DB paths
 - [ ] **Phase 3: Edge Cases and Tests** - Search context preservation, cached message handling, and full test suite
 
@@ -35,10 +35,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Wave 0: Create MessageIsLocalOnlyTest.kt and ChannelStateImplPreservationTest.kt stubs
-- [ ] 01-02-PLAN.md — Wave 1: Implement isLocalOnly() predicate, selectLocalOnlyMessagesForChannel DB layer, ChannelEntity.oldestLoadedDate + ChatDatabase v102
-- [ ] 01-03-PLAN.md — Wave 2: Implement ChannelStateImpl.setMessagesPreservingLocalOnly() with tests
-- [ ] 01-04-PLAN.md — Wave 3: Wire call sites in ChannelLogicImpl, add updateOldestLoadedDateForChannel, add ChannelLogicImplTest call-site tests
+- [x] 01-01-PLAN.md — Wave 0: Create MessageIsLocalOnlyTest.kt and ChannelStateImplPreservationTest.kt stubs
+- [x] 01-02-PLAN.md — Wave 1: Implement isLocalOnly() predicate, selectLocalOnlyMessagesForChannel DB layer, ChannelEntity.oldestLoadedDate + ChatDatabase v102
+- [x] 01-03-PLAN.md — Wave 2: Implement ChannelStateImpl.setMessagesPreservingLocalOnly() with tests
+- [x] 01-04-PLAN.md — Wave 3: Wire call sites in ChannelLogicImpl, add updateOldestLoadedDateForChannel, add ChannelLogicImplTest call-site tests
 
 ### Phase 2: Full Trigger Coverage
 **Goal**: Preservation applies to every server update trigger — pagination (load older/newer) and reconnect — with correct behavior whether OfflinePlugin is installed or not
@@ -76,6 +76,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core Reconciliation | 3/4 | In Progress|  |
+| 1. Core Reconciliation | 4/4 | Complete | 2026-03-13 |
 | 2. Full Trigger Coverage | 0/? | Not started | - |
 | 3. Edge Cases and Tests | 0/? | Not started | - |

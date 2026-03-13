@@ -18,7 +18,7 @@
 
 ### Architecture
 
-- [ ] **ARCH-01**: The reconciliation mechanism lives in the state layer (`stream-chat-android-client`), has no public API surface, and does not touch the legacy channel logic path (`ChannelLogicLegacyImpl` / `ChannelStateLegacyImpl`)
+- [x] **ARCH-01**: The reconciliation mechanism lives in the state layer (`stream-chat-android-client`), has no public API surface, and does not touch the legacy channel logic path (`ChannelLogicLegacyImpl` / `ChannelStateLegacyImpl`)
 
 ### Testing
 
@@ -49,7 +49,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PRES-01 | Phase 1 | Complete |
 | PRES-04 | Phase 1 | Complete |
 | PRES-05 | Phase 1 | Complete |
-| ARCH-01 | Phase 1 | Pending |
+| ARCH-01 | Phase 1 | Complete |
 | PRES-02 | Phase 2 | Pending |
 | PRES-03 | Phase 2 | Pending |
 | PRES-07 | Phase 2 | Pending |

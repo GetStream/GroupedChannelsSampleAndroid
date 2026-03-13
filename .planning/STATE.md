@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Completed 01-core-reconciliation-03-PLAN.md
-last_updated: "2026-03-13T01:41:48.415Z"
-last_activity: 2026-03-12 — Roadmap created
+status: in-progress
+stopped_at: Completed 01-core-reconciliation-04-PLAN.md
+last_updated: "2026-03-13T01:57:55.000Z"
+last_activity: 2026-03-13 — Phase 1 complete
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 0
+  completed_plans: 4
+  percent: 33
 ---
 
 # Project State
@@ -21,33 +21,34 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Local-only messages are never silently discarded when server data updates the channel state.
-**Current focus:** Phase 1 — Core Reconciliation
+**Current focus:** Phase 1 complete — ready for Phase 2
 
 ## Current Position
 
-Phase: 1 of 3 (Core Reconciliation)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-03-12 — Roadmap created
+Phase: 1 of 3 (Core Reconciliation) — COMPLETE
+Plan: 4 of 4 in current phase
+Status: Phase 1 complete
+Last activity: 2026-03-13 — Phase 1 complete (all 4 plans)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: —
+- Total plans completed: 4
+- Average duration: ~7 min/plan
+- Total execution time: ~30 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-core-reconciliation | 4 | ~30 min | ~7 min |
 
 *Updated after each plan completion*
 | Phase 01-core-reconciliation P01 | 2 | 2 tasks | 2 files |
 | Phase 01-core-reconciliation P03 | 8 | 1 tasks | 2 files |
+| Phase 01-core-reconciliation P04 | 17 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -65,18 +66,21 @@ Recent decisions affecting current work:
 - [Phase 01-core-reconciliation]: ChannelStateImplPreservationTest extends ChannelStateImplTestBase for fixture reuse
 - [Phase 01-core-reconciliation]: setMessagesPreservingLocalOnly uses _messages.update { } (CAS) not value assignment — avoids two-emission flicker
 - [Phase 01-core-reconciliation]: setMessages kept with _messages.value = semantics for DB-seed path (OfflinePlugin already includes local-only in DB data)
+- [Phase 01-core-reconciliation P04]: coroutineScope.launch used in non-suspend onQueryChannelResult to enable DB prefetch; UnconfinedTestDispatcher ensures eager execution in tests
+- [Phase 01-core-reconciliation P04]: updateMessages made suspend; targeted DAO UPDATE for oldestLoadedDate avoids full-row replace
+- [Phase 01-core-reconciliation P04]: anyOrNull() required for localOnlyFromDb in Mockito verify — unstubbed suspend List<Message> may return null
 
 ### Pending Todos
 
-None yet.
+- Phase 2: DB-seed path (updateDataForChannel) should read ChannelEntity.oldestLoadedDate as floor fallback when incoming is empty (marked with TODO(Phase 2) in ChannelLogicImpl.kt)
+- Phase 2: RepositoryFacade.selectLocalOnlyMessagesForChannel needs no-op for non-DB path
 
 ### Blockers/Concerns
 
 - DB-seed race (pre-existing): `updateStateFromDatabase` vs `onQueryChannelResult` ordering is non-deterministic. Preservation is neutral to this race. See CONCERNS.md.
-- `RepositoryFacade.selectLocalOnlyMessagesForChannel` needs a no-op implementation for the no-DB path (Phase 2).
 
 ## Session Continuity
 
-Last session: 2026-03-13T01:41:48.413Z
-Stopped at: Completed 01-core-reconciliation-03-PLAN.md
+Last session: 2026-03-13T01:57:55Z
+Stopped at: Completed 01-core-reconciliation-04-PLAN.md
 Resume file: None
