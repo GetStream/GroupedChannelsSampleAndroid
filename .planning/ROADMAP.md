@@ -66,10 +66,11 @@ Plans:
   3. A unit test verifies: an ephemeral message present before channel re-entry (`queryChannel` call) is present after the server result arrives
   4. A unit test verifies: a pending edit (`SYNC_NEEDED` on existing server ID) present before pagination is present after `loadOlderMessages` returns
   5. A unit test verifies: when OfflinePlugin is absent, a pending send present in state survives a server message update with no crash or data loss
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md — Wave 1: Add upsertCachedLatestMessagesPreservingLocalOnly to ChannelStateImpl + wire insideSearch branch in ChannelLogicImpl (TDD)
+- [ ] 03-02-PLAN.md — Wave 2: Create ChannelLogicImplEndToEndPreservationTest with 4 end-to-end preservation tests (TDD)
 
 ## Progress
 
@@ -80,4 +81,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Core Reconciliation | 4/4 | Complete | 2026-03-13 |
 | 2. Full Trigger Coverage | 3/3 | Complete   | 2026-03-13 |
-| 3. Edge Cases and Tests | 0/? | Not started | - |
+| 3. Edge Cases and Tests | 0/2 | Not started | - |
