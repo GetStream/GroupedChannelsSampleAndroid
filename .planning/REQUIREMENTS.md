@@ -8,12 +8,12 @@
 ### Message Preservation
 
 - [x] **PRES-01**: When `onQueryChannelResult` fires (initial channel load), local-only messages present in state are merged back rather than discarded
-- [ ] **PRES-02**: When a pagination response arrives (loadOlderMessages / loadNewerMessages), local-only messages in the affected window are preserved
-- [ ] **PRES-03**: When reconnect sync triggers a channel refresh, local-only messages are preserved
+- [x] **PRES-02**: When a pagination response arrives (loadOlderMessages / loadNewerMessages), local-only messages in the affected window are preserved
+- [x] **PRES-03**: When reconnect sync triggers a channel refresh, local-only messages are preserved
 - [x] **PRES-04**: Window boundaries are derived from the server response fields (`oldestMessageAt` / `newestMessageAt`) where available, matching the iOS approach
 - [x] **PRES-05**: All four local-only message types are preserved: pending send (SYNC_NEEDED/IN_PROGRESS), send failed (FAILED_PERMANENTLY), ephemeral (`type == "ephemeral"`), and pending edit/delete
 - [ ] **PRES-06**: When `insideSearch == true`, reconciliation does not reset the active window — local-only messages remain visible in search context without corrupting jump-to-message state
-- [ ] **PRES-07**: When OfflinePlugin is absent (no DB), in-memory local-only messages are preserved across server updates (best-effort, state as pseudo-SSOT)
+- [x] **PRES-07**: When OfflinePlugin is absent (no DB), in-memory local-only messages are preserved across server updates (best-effort, state as pseudo-SSOT)
 - [x] **PRES-08**: When OfflinePlugin is present, DB-persisted local-only messages (SYNC_NEEDED, FAILED_PERMANENTLY) are included in the merged result after a server update
 
 ### Architecture
@@ -50,9 +50,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PRES-04 | Phase 1 | Complete |
 | PRES-05 | Phase 1 | Complete |
 | ARCH-01 | Phase 1 | Complete |
-| PRES-02 | Phase 2 | Pending |
-| PRES-03 | Phase 2 | Pending |
-| PRES-07 | Phase 2 | Pending |
+| PRES-02 | Phase 2 | Complete |
+| PRES-03 | Phase 2 | Complete |
+| PRES-07 | Phase 2 | Complete |
 | PRES-08 | Phase 2 | Complete |
 | PRES-06 | Phase 3 | Pending |
 | TEST-01 | Phase 3 | Pending |
