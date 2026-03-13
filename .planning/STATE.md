@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-stopped_at: Completed 01-core-reconciliation-04-PLAN.md
-last_updated: "2026-03-13T01:57:55.000Z"
-last_activity: 2026-03-13 — Phase 1 complete
+stopped_at: Completed 02-full-trigger-coverage-02-01-PLAN.md
+last_updated: "2026-03-13T08:23:02Z"
+last_activity: 2026-03-13 — Phase 2 plan 01 complete (selectOldestLoadedDateForChannel repository method)
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
-  percent: 33
+  total_plans: 7
+  completed_plans: 5
+  percent: 40
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Local-only messages are never silently discarded when server data updates the channel state.
-**Current focus:** Phase 1 complete — ready for Phase 2
+**Current focus:** Phase 2 in progress — plan 01 complete
 
 ## Current Position
 
-Phase: 1 of 3 (Core Reconciliation) — COMPLETE
-Plan: 4 of 4 in current phase
-Status: Phase 1 complete
-Last activity: 2026-03-13 — Phase 1 complete (all 4 plans)
+Phase: 2 of 3 (Full Trigger Coverage) — IN PROGRESS
+Plan: 1 of 3 in current phase — COMPLETE
+Status: Phase 2 plan 01 complete
+Last activity: 2026-03-13 — Phase 2 plan 01 complete (selectOldestLoadedDateForChannel repository method)
 
-Progress: [███░░░░░░░] 33%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -49,6 +49,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 01-core-reconciliation P01 | 2 | 2 tasks | 2 files |
 | Phase 01-core-reconciliation P03 | 8 | 1 tasks | 2 files |
 | Phase 01-core-reconciliation P04 | 17 | 2 tasks | 6 files |
+| Phase 02-full-trigger-coverage P01 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,10 @@ Recent decisions affecting current work:
 - [Phase 01-core-reconciliation P04]: updateMessages made suspend; targeted DAO UPDATE for oldestLoadedDate avoids full-row replace
 - [Phase 01-core-reconciliation P04]: anyOrNull() required for localOnlyFromDb in Mockito verify — unstubbed suspend List<Message> may return null
 
+- [Phase 02-full-trigger-coverage P01]: Single-column DAO SELECT avoids full entity fetch — Channel model does not carry oldestLoadedDate
+- [Phase 02-full-trigger-coverage P01]: RepositoryFacade requires zero changes for selectOldestLoadedDateForChannel — by-delegation pattern auto-exposes new method
+- [Phase 02-full-trigger-coverage P01]: NoOpChannelRepository.selectOldestLoadedDateForChannel returns null to signal no-floor (preserve all local-only messages)
+
 ### Pending Todos
 
 - Phase 2: DB-seed path (updateDataForChannel) should read ChannelEntity.oldestLoadedDate as floor fallback when incoming is empty (marked with TODO(Phase 2) in ChannelLogicImpl.kt)
@@ -81,6 +86,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-13T01:57:55Z
-Stopped at: Completed 01-core-reconciliation-04-PLAN.md
-Resume file: None
+Last session: 2026-03-13T08:23:02Z
+Stopped at: Completed 02-full-trigger-coverage-02-01-PLAN.md
+Resume file: .planning/phases/02-full-trigger-coverage/02-02-PLAN.md

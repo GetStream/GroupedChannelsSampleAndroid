@@ -14,7 +14,7 @@
 - [x] **PRES-05**: All four local-only message types are preserved: pending send (SYNC_NEEDED/IN_PROGRESS), send failed (FAILED_PERMANENTLY), ephemeral (`type == "ephemeral"`), and pending edit/delete
 - [ ] **PRES-06**: When `insideSearch == true`, reconciliation does not reset the active window — local-only messages remain visible in search context without corrupting jump-to-message state
 - [ ] **PRES-07**: When OfflinePlugin is absent (no DB), in-memory local-only messages are preserved across server updates (best-effort, state as pseudo-SSOT)
-- [ ] **PRES-08**: When OfflinePlugin is present, DB-persisted local-only messages (SYNC_NEEDED, FAILED_PERMANENTLY) are included in the merged result after a server update
+- [x] **PRES-08**: When OfflinePlugin is present, DB-persisted local-only messages (SYNC_NEEDED, FAILED_PERMANENTLY) are included in the merged result after a server update
 
 ### Architecture
 
@@ -53,7 +53,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PRES-02 | Phase 2 | Pending |
 | PRES-03 | Phase 2 | Pending |
 | PRES-07 | Phase 2 | Pending |
-| PRES-08 | Phase 2 | Pending |
+| PRES-08 | Phase 2 | Complete |
 | PRES-06 | Phase 3 | Pending |
 | TEST-01 | Phase 3 | Pending |
 
