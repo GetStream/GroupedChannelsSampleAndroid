@@ -1,7 +1,6 @@
 package io.getstream.chat.android.groupedchannels
 
 import android.content.Context
-import android.util.Log
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.logger.ChatLogLevel
 import io.getstream.chat.android.models.User
@@ -10,10 +9,20 @@ import io.getstream.chat.android.state.plugin.config.StatePluginConfig
 import io.getstream.chat.android.state.plugin.factory.StreamStatePluginFactory
 import io.getstream.result.call.enqueue
 
+/**
+ * Handles ChatClient initialization and connection for the sample app.
+ */
 object ChatManager {
 
-    public val USER_ID = "bench-bq-0"
+    val USER_ID = "bench-bq-0"
 
+    /**
+     * Initializes the ChatClient with offline and state plugins, then connects the user.
+     *
+     * @param appContext The application context for initializing the ChatClient and plugins.
+     * @param onComplete Callback invoked when the user is successfully connected.
+     * @param onError Callback invoked if there is an error during connection.
+     */
     fun initializeAndConnect(
         appContext: Context,
         onComplete: () -> Unit,

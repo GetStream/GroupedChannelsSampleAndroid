@@ -21,11 +21,6 @@ import kotlinx.coroutines.flow.StateFlow
  * A [ChatEventHandler] that uses a client-side [filter] lambda to decide whether a channel
  * belongs in the current query.
  *
- * Overrides [handleChatEvent] directly to always prefer the [cachedChannel] (enriched from
- * per-channel state, already updated by channel event handlers) over the raw [HasChannel.channel]
- * from the event payload. The server's event channel snapshot may have an incomplete messages list,
- * stale message counts, etc.
- *
  * @param filter Client-side predicate: returns `true` if the channel belongs in this list.
  */
 class GroupedChatEventHandler(
@@ -41,7 +36,6 @@ class GroupedChatEventHandler(
         cachedChannel: Channel?
     ): EventHandlingResult {
         // Prefer cachedChannel (from per-channel state, already updated with latest messages)
-        // over event.channel (raw server payload with potentially incomplete data).
         val channel = cachedChannel ?: (event as? HasChannel)?.channel
         return when (event) {
             is NotificationAddedToChannelEvent,

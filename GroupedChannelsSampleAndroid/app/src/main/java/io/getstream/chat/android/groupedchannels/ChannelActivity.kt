@@ -9,6 +9,9 @@ import io.getstream.chat.android.compose.ui.messages.MessagesScreen
 import io.getstream.chat.android.compose.ui.theme.ChatTheme
 import io.getstream.chat.android.compose.viewmodel.messages.MessagesViewModelFactory
 
+/**
+ * Minimum-feature Channel screen.
+ */
 class ChannelActivity : ComponentActivity() {
 
     private val cid: String by lazy {
