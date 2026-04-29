@@ -42,8 +42,8 @@ android {
 }
 
 dependencies {
-    implementation("io.getstream:stream-chat-android-compose:6.37.3-202604241416-SNAPSHOT")
-    implementation("io.getstream:stream-chat-android-offline:6.37.3-202604241416-SNAPSHOT")
+    implementation("io.getstream:stream-chat-android-compose:6.37.3-202604281455-SNAPSHOT")
+    implementation("io.getstream:stream-chat-android-offline:6.37.3-202604281455-SNAPSHOT")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
