@@ -2,7 +2,7 @@
 
 ### Setup
 
-Snapshot version: **6.37.3-202604281455-SNAPSHOT**
+Snapshot version: **6.37.5-202605181449-SNAPSHOT**
 
 To register the snapshot repository in your project, add the following line to the repositories block of your `settings.gradle.kts`:
 
@@ -13,13 +13,13 @@ maven { url = uri("https://central.sonatype.com/repository/maven-snapshots/") }
 Then, to include the Stream Chat in you project, add the following lines to you app `build.gradle` dependencies block (or via the `libs.versions.toml` catalog):
 
 ```kotlin
-implementation("io.getstream:stream-chat-android-compose:6.37.3-202604281455-SNAPSHOT")
-implementation("io.getstream:stream-chat-android-offline:6.37.3-202604281455-SNAPSHOT")
+implementation("io.getstream:stream-chat-android-compose:6.37.5-202605181449-SNAPSHOT")
+implementation("io.getstream:stream-chat-android-offline:6.37.5-202605181449-SNAPSHOT")
 ```
 
 ### QueryGroupedChannels operation
 
-The QueryGroupedChannels operation is defined on the ChatClient :
+The `queryGroupedChannels` operation is defined on the `ChatClient`:
 
 ```kotlin
 @CheckResult
@@ -30,45 +30,43 @@ public fun queryGroupedChannels(
 ): Call<GroupedChannels>
 ```
 
-### ChannelViewModelFactory setup
-
-After a successful connection to the Stream service, calling the `queryGroupedChannels` method will return a result holding the first page of each group (`all`, `new`, `current`, `expired`). You can then use these groups to prefill the `ChannelListViewModel` with the initial data, skipping the 4 separate `QueryChannels` invokations. To do that, you need the following setup:
+Calling it fetches the first page of each server-side group (`all`, `new`, `current`, `old`) in a single round-trip. The result is persisted into the state/database, so any `ChannelListViewModel` bound to one of those group keys is populated without a separate `queryChannels` call.
 
 ```kotlin
-// Create the ChannelViewModelFactory (one per group)
-private val allFactory by lazy {
-    ChannelViewModelFactory(
-        chatClient = ChatClient.instance(),
-        querySort = QuerySortByField.descByName("last_message_at"),
-        filters = allFilter(),
-        channelLimit = 20,
-        chatEventHandlerFactory = GroupedChatEventHandlerFactory("all") { channel ->
-            // accept all channels the user is member of
-            true
+ChatClient.instance()
+    .queryGroupedChannels(watch = true)
+    .enqueue(
+        onSuccess = { grouped ->
+            // No action needed — state/db is prefilled automatically.
+            Log.d("MainActivity", "Prefill grouped channels: ${grouped.groups.keys}")
         },
-        // Prevent initial data fetch
-        skipInitialQuery = true,
+        onError = {
+            Log.e("MainActivity", "Failed to query grouped channels for prefill")
+        },
     )
-}
-
-// Fetch the initial data
-ChatClient.instance().queryGroupedChannels(watch = true).enqueue(
-  onSuccess = { result ->
-    // retrieve data for "all" group
-    val allData = result.groups["all"]
-    // pre-fill the VM with "all" data
-    allViewModel.prefill(allData)
-
-    // pre-fill other groups ("current", "new", ""expired)
-    // ...
-  }
-)
 ```
 
-The important steps are:
+### ChannelViewModelFactory setup
 
-- `ChannelViewModelFactory(skipInitialQuery = true)` - skips the initial load for the VM data
-- `ChannelListViewModel.prefill(group)` - populates the VM with the data fetched from the GroupedChannels
+Each tab (group) is backed by its own `ChannelListViewModel`. The factory takes a single `groupKey` argument identifying the server-side group; the SDK uses that key to resolve the filter, sort and event-matching logic for the corresponding group.
+
+**Note: Instantiating `ChannelListViewModel` will NOT automatically call `ChatClient.queryGroupedChannels` - you have to do that manually to prepopulate the data.**
+
+```kotlin
+// One factory per group
+private val allFactory     by lazy { ChannelViewModelFactory(groupKey = "all") }
+private val newFactory     by lazy { ChannelViewModelFactory(groupKey = "new") }
+private val currentFactory by lazy { ChannelViewModelFactory(groupKey = "current") }
+private val oldFactory     by lazy { ChannelViewModelFactory(groupKey = "old") }
+
+// Keyed ViewModels so multiple ChannelListViewModel instances coexist
+private val allViewModel: ChannelListViewModel by lazy {
+    ViewModelProvider(this, allFactory)["all", ChannelListViewModel::class.java]
+}
+// ... same for new / current / old
+```
+
+Combined with `queryGroupedChannels`, a single network call populates every tab.
 
 ### Unread counts per group
 
@@ -80,10 +78,10 @@ ChatClient.instance()
     .flatMapLatest { it.groupedUnreadChannels }
 ```
 
-The `groupedUnreadChannels` is a `Map` keyed by the group name (`all`, `new`...), with values equal to the current unread count of the group.
+The `groupedUnreadChannels` is a `Map` keyed by the group name (`all`, `new`, `current`, `old`), with values equal to the current unread count of the group.
 
 ### Event matching
 
-To ensure channels switch to their appropriate group after receiving/sending a message, you would also need to implement custom `ChatEventHandler` -> which will cross-check each channel against the expected filters - telling the `ChannelList` whether the channel should be added/removed from its current state. The `ChatEventHandler` is then passed to the `ChannelViewModelFactory` constructor.
-
-An example of such `ChatEventHandler` can be found [here](https://github.com/GetStream/GroupedChannelsSampleAndroid/blob/main/GroupedChannelsSampleAndroid/app/src/main/java/io/getstream/chat/android/groupedchannels/GroupedChatEventHandler.kt).
+Event matching (deciding which group a channel belongs to after a new or updated message) is handled by the SDK based on the `groupKey` passed to `ChannelViewModelFactory`. The server-side group definition is the single source of truth, so no custom `ChatEventHandler` is required.
+upKey` passed to `ChannelViewModelFactory`. You no longer need to implement a custom `ChatEventHandler` per group — the server-side group definition is the single source of truth.
+er.kt).

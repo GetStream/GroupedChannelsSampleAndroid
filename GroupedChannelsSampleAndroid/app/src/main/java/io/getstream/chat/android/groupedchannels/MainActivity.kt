@@ -57,162 +57,31 @@ import kotlin.time.Duration.Companion.hours
 
 class MainActivity : ComponentActivity() {
 
-    // region Channel list filters
-
-    private val nowMillis = System.currentTimeMillis()
-    private val minus24h = Date(nowMillis - 24.hours.inWholeMilliseconds)
-    private val minus48h = Date(nowMillis - 48.hours.inWholeMilliseconds)
-    private val minus14d = Date(nowMillis - 14.days.inWholeMilliseconds)
-
-    // "all" — first-page blended inbox view
-    private fun allFilter(): FilterObject =
-        Filters.`in`("members", listOf(ChatManager.USER_ID))
-
-    // "new" — recently opened / early-life channels
-    // (message_count = 0 && created_at > now-24h) || (message_count = 1 && created_at > now-48h)
-    private fun newFilter(): FilterObject = Filters.and(
-        allFilter(),
-        Filters.or(
-            Filters.and(
-                Filters.eq("message_count", 0),
-                Filters.greaterThan("created_at", minus24h),
-            ),
-            Filters.and(
-                Filters.eq("message_count", 1),
-                Filters.greaterThan("created_at", minus48h),
-            ),
-        ),
-    )
-
-    // "current" — active channels
-    // message_count >= 2 && last_message_at > now-14d
-    private fun currentFilter(): FilterObject = Filters.and(
-        allFilter(),
-        Filters.greaterThanEquals("message_count", 2),
-        Filters.greaterThan("last_message_at", minus14d),
-    )
-
-    // "expired" — stale / inactive channels
-    // (message_count = 0 && created_at <= now-24h) ||
-    // (message_count = 1 && created_at <= now-48h) ||
-    // (message_count >= 2 && (last_message_at <= now-14d || last_message_at IS NULL))
-    private fun expiredFilter(): FilterObject = Filters.and(
-        allFilter(),
-        Filters.or(
-            Filters.and(
-                Filters.eq("message_count", 0),
-                Filters.lessThanEquals("created_at", minus24h),
-            ),
-            Filters.and(
-                Filters.eq("message_count", 1),
-                Filters.lessThanEquals("created_at", minus48h),
-            ),
-            Filters.and(
-                Filters.greaterThanEquals("message_count", 2),
-                Filters.or(
-                    Filters.lessThanEquals("last_message_at", minus14d),
-                    Filters.notExists("last_message_at"),
-                ),
-            ),
-        ),
-    )
-
-    // region Per-tab ViewModel factories
-
     private val allFactory by lazy {
-        ChannelViewModelFactory(
-            chatClient = ChatClient.instance(),
-            querySort = QuerySortByField.descByName("last_message_at"),
-            filters = allFilter(),
-            channelLimit = 20,
-            chatEventHandlerFactory = GroupedChatEventHandlerFactory("all") { channel ->
-                // accept all channels the user is member of
-                true
-            },
-            skipInitialQuery = true,
-        )
+        ChannelViewModelFactory(groupKey = ChannelGroup.ALL.key)
     }
-
     private val newFactory by lazy {
-        ChannelViewModelFactory(
-            chatClient = ChatClient.instance(),
-            querySort = QuerySortByField.descByName("last_message_at"),
-            filters = newFilter(),
-            channelLimit = 20,
-            chatEventHandlerFactory = GroupedChatEventHandlerFactory("new") { channel ->
-                val mc = effectiveMessageCount(channel)
-                val now = System.currentTimeMillis()
-                val minus24h = Date(now - 24.hours.inWholeMilliseconds)
-                val minus48h = Date(now - 48.hours.inWholeMilliseconds)
-                (mc == 0 && channel.createdAt?.after(minus24h) == true) ||
-                        (mc == 1 && channel.createdAt?.after(minus48h) == true)
-            },
-            skipInitialQuery = true,
-        )
+        ChannelViewModelFactory(groupKey = ChannelGroup.NEW.key)
     }
-
     private val currentFactory by lazy {
-        ChannelViewModelFactory(
-            chatClient = ChatClient.instance(),
-            querySort = QuerySortByField.descByName("last_message_at"),
-            filters = currentFilter(),
-            channelLimit = 20,
-            chatEventHandlerFactory = GroupedChatEventHandlerFactory("current") { channel ->
-                // check message count
-                val mc = effectiveMessageCount(channel)
-                if (mc < 2) return@GroupedChatEventHandlerFactory false
-                // check lastMessageAt
-                val lastMessageAt = channel.lastMessageAt ?: return@GroupedChatEventHandlerFactory false
-                val now = System.currentTimeMillis()
-                val minus14d = Date(now - 14.days.inWholeMilliseconds)
-                lastMessageAt.after(minus14d)
-            },
-            skipInitialQuery = true,
-        )
+        ChannelViewModelFactory(groupKey = ChannelGroup.CURRENT.key)
     }
-
-    private val expiredFactory by lazy {
-        ChannelViewModelFactory(
-            chatClient = ChatClient.instance(),
-            querySort = QuerySortByField.descByName("last_message_at"),
-            filters = expiredFilter(),
-            channelLimit = 20,
-            chatEventHandlerFactory = GroupedChatEventHandlerFactory("expired") { channel ->
-                val mc = effectiveMessageCount(channel)
-                val now = System.currentTimeMillis()
-                val minus24h = Date(now - 24.hours.inWholeMilliseconds)
-                val minus48h = Date(now - 48.hours.inWholeMilliseconds)
-                val minus14d = Date(now - 14.days.inWholeMilliseconds)
-                // mc == 0: expired if created <= now-24h
-                if (mc == 0) return@GroupedChatEventHandlerFactory channel.createdAt?.after(minus24h) != true
-                // mc == 1: expired if created <= now-48h
-                if (mc == 1) return@GroupedChatEventHandlerFactory channel.createdAt?.after(minus48h) != true
-                // mc >= 2: expired if lastMessageAt is old or absent
-                channel.lastMessageAt?.after(minus14d) != true
-            },
-            skipInitialQuery = true,
-        )
+    private val oldFactory by lazy {
+        ChannelViewModelFactory(groupKey = ChannelGroup.OLD.key)
     }
-
-    // endregion
-
-    // region Per-tab ViewModels (keyed so that multiple instances of ChannelListViewModel coexist)
 
     private val allViewModel: ChannelListViewModel by lazy {
-        ViewModelProvider(this, allFactory)[GroupTab.ALL.key, ChannelListViewModel::class.java]
+        ViewModelProvider(this, allFactory)[ChannelGroup.ALL.key, ChannelListViewModel::class.java]
     }
     private val newViewModel: ChannelListViewModel by lazy {
-        ViewModelProvider(this, newFactory)[GroupTab.NEW.key, ChannelListViewModel::class.java]
+        ViewModelProvider(this, newFactory)[ChannelGroup.NEW.key, ChannelListViewModel::class.java]
     }
     private val currentViewModel: ChannelListViewModel by lazy {
-        ViewModelProvider(this, currentFactory)[GroupTab.CURRENT.key, ChannelListViewModel::class.java]
+        ViewModelProvider(this, currentFactory)[ChannelGroup.CURRENT.key, ChannelListViewModel::class.java]
     }
-    private val expiredViewModel: ChannelListViewModel by lazy {
-        ViewModelProvider(this, expiredFactory)[GroupTab.EXPIRED.key, ChannelListViewModel::class.java]
+    private val oldViewModel: ChannelListViewModel by lazy {
+        ViewModelProvider(this, oldFactory)[ChannelGroup.OLD.key, ChannelListViewModel::class.java]
     }
-
-    // endregion
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -221,7 +90,7 @@ class MainActivity : ComponentActivity() {
         ChatManager.initializeAndConnect(
             appContext = applicationContext,
             onComplete = {
-                prefillWithGroupedChannels()
+                initGroupedChannels()
             },
             onError = {
                 Log.e("MainActivity", "Failed to connect user")
@@ -232,7 +101,7 @@ class MainActivity : ComponentActivity() {
             ChatTheme {
                 setContent {
                     ChatTheme {
-                        var selected by rememberSaveable { mutableStateOf(GroupTab.ALL) }
+                        var selected by rememberSaveable { mutableStateOf(ChannelGroup.ALL) }
 
                         @OptIn(ExperimentalCoroutinesApi::class)
                         val unreadByTab by remember {
@@ -250,7 +119,7 @@ class MainActivity : ComponentActivity() {
                                     selectedTabIndex = selected.ordinal,
                                     edgePadding = 0.dp,
                                 ) {
-                                    GroupTab.entries.forEach { tab ->
+                                    ChannelGroup.entries.forEach { tab ->
                                         Tab(
                                             selected = selected == tab,
                                             onClick = { selected = tab },
@@ -268,17 +137,22 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                                 val vm = when (selected) {
-                                    GroupTab.ALL -> allViewModel
-                                    GroupTab.NEW -> newViewModel
-                                    GroupTab.CURRENT -> currentViewModel
-                                    GroupTab.EXPIRED -> expiredViewModel
+                                    ChannelGroup.ALL -> allViewModel
+                                    ChannelGroup.NEW -> newViewModel
+                                    ChannelGroup.CURRENT -> currentViewModel
+                                    ChannelGroup.OLD -> oldViewModel
                                 }
                                 key(selected) {
                                     ChannelList(
                                         modifier = Modifier.fillMaxSize(),
                                         viewModel = vm,
                                         onChannelClick = { channel ->
-                                            startActivity(ChannelActivity.createIntent(this@MainActivity, channel.cid))
+                                            startActivity(
+                                                ChannelActivity.createIntent(
+                                                    this@MainActivity,
+                                                    channel.cid
+                                                )
+                                            )
                                         },
                                     )
                                 }
@@ -290,34 +164,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun prefillWithGroupedChannels() {
+    private fun initGroupedChannels() {
         ChatClient.instance()
             .queryGroupedChannels(watch = true)
             .enqueue(
                 onSuccess = { grouped ->
-                    grouped.groups[GroupTab.ALL.key]?.let { allViewModel.prefill(it) }
-                    grouped.groups[GroupTab.NEW.key]?.let { newViewModel.prefill(it) }
-                    grouped.groups[GroupTab.CURRENT.key]?.let { currentViewModel.prefill(it) }
-                    grouped.groups[GroupTab.EXPIRED.key]?.let { expiredViewModel.prefill(it) }
+                    // No action needed, state/db is prefilled automatically
+                    Log.d("MainActivity", "Prefill grouped channels: ${grouped.groups.keys}")
                 },
                 onError = {
                     Log.e("MainActivity", "Failed to query grouped channels for prefill")
                 },
             )
     }
-
-    private fun effectiveMessageCount(channel: Channel): Int {
-        return maxOf(
-            channel.messageCount ?: 0,
-            channel.messages.size,
-            if (channel.lastMessageAt == null) 0 else 1,
-        )
-    }
 }
 
-private enum class GroupTab(val key: String, val label: String) {
+private enum class ChannelGroup(val key: String, val label: String) {
     ALL("all", "All"),
     NEW("new", "New"),
     CURRENT("current", "Current"),
-    EXPIRED("expired", "Expired"),
+    OLD("old", "Old"),
 }
