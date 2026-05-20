@@ -39,7 +39,6 @@ object ChatManager {
             appContext = appContext,
         )
         val chatClient = ChatClient.Builder(apiKey, appContext)
-            .baseUrl("https://chat-edge-dublin-ce2.stream-io-api.com/")
             .withPlugins(state, offline)
             .logLevel(ChatLogLevel.ALL)
             .build()
