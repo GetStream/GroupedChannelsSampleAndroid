@@ -83,5 +83,3 @@ The `groupedUnreadChannels` is a `Map` keyed by the group name (`all`, `new`, `c
 ### Event matching
 
 Event matching (deciding which group a channel belongs to after a new or updated message) is handled by the SDK based on the `groupKey` passed to `ChannelViewModelFactory`. The server-side group definition is the single source of truth, so no custom `ChatEventHandler` is required.
-upKey` passed to `ChannelViewModelFactory`. You no longer need to implement a custom `ChatEventHandler` per group — the server-side group definition is the single source of truth.
-er.kt).
