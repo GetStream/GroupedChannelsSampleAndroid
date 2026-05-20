@@ -42,8 +42,8 @@ android {
 }
 
 dependencies {
-    implementation("io.getstream:stream-chat-android-compose:6.37.5-202605191807-SNAPSHOT")
-    implementation("io.getstream:stream-chat-android-offline:6.37.5-202605191807-SNAPSHOT")
+    implementation("io.getstream:stream-chat-android-compose:6.37.5-202605201350-SNAPSHOT")
+    implementation("io.getstream:stream-chat-android-offline:6.37.5-202605201350-SNAPSHOT")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

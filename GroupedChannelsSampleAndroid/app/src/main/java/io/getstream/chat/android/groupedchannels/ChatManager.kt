@@ -14,23 +14,22 @@ import io.getstream.result.call.enqueue
  */
 object ChatManager {
 
-    val USER_ID = "bench-bq-0"
+    private const val API_KEY = "vrvdwv6pk4yz"
 
     /**
      * Initializes the ChatClient with offline and state plugins, then connects the user.
      *
      * @param appContext The application context for initializing the ChatClient and plugins.
+     * @param loginUser The user to connect with.
      * @param onComplete Callback invoked when the user is successfully connected.
      * @param onError Callback invoked if there is an error during connection.
      */
     fun initializeAndConnect(
         appContext: Context,
+        loginUser: LoginUser,
         onComplete: () -> Unit,
         onError: () -> Unit,
     ) {
-        val apiKey = "vrvdwv6pk4yz"
-        val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYmVuY2gtYnEtMCJ9._GNHNHTR4WyCLTHfoSisYNdXC3sDorPVwRPcb6bwdBQ"
-
         val state = StreamStatePluginFactory(
             config = StatePluginConfig(),
             appContext = appContext,
@@ -38,13 +37,13 @@ object ChatManager {
         val offline = StreamOfflinePluginFactory(
             appContext = appContext,
         )
-        val chatClient = ChatClient.Builder(apiKey, appContext)
+        val chatClient = ChatClient.Builder(API_KEY, appContext)
             .withPlugins(state, offline)
             .logLevel(ChatLogLevel.ALL)
             .build()
         chatClient.connectUser(
-            user = User(id = USER_ID, name = "bench-bq-0"),
-            token = token,
+            user = User(id = loginUser.id, name = loginUser.name),
+            token = loginUser.token,
         ).enqueue(
             onSuccess = { onComplete() },
             onError = { onError() },

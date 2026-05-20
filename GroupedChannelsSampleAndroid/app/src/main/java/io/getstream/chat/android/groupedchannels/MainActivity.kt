@@ -5,21 +5,35 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Tab
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -31,29 +45,23 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.compose.ui.channels.list.ChannelList
-import io.getstream.chat.android.compose.ui.components.channels.UnreadCountIndicator
 import io.getstream.chat.android.compose.ui.theme.ChatTheme
 import io.getstream.chat.android.compose.viewmodel.channels.ChannelListViewModel
 import io.getstream.chat.android.compose.viewmodel.channels.ChannelViewModelFactory
 import io.getstream.chat.android.groupedchannels.ui.theme.GroupedChannelsSampleAndroidTheme
-import io.getstream.chat.android.models.Channel
-import io.getstream.chat.android.models.FilterObject
-import io.getstream.chat.android.models.Filters
-import io.getstream.chat.android.models.querysort.QuerySortByField
 import io.getstream.chat.android.state.extensions.globalStateFlow
 import io.getstream.result.call.enqueue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
-import java.util.Date
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
+import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
 
@@ -87,61 +95,39 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        ChatManager.initializeAndConnect(
-            appContext = applicationContext,
-            onComplete = {
-                initGroupedChannels()
-            },
-            onError = {
-                Log.e("MainActivity", "Failed to connect user")
-            }
-        )
+        initGroupedChannels()
 
         setContent {
-            ChatTheme {
-                setContent {
-                    ChatTheme {
-                        var selected by rememberSaveable { mutableStateOf(ChannelGroup.ALL) }
+            GroupedChannelsSampleAndroidTheme {
+                var selected by rememberSaveable { mutableStateOf(ChannelGroup.ALL) }
 
-                        @OptIn(ExperimentalCoroutinesApi::class)
-                        val unreadByTab by remember {
-                            ChatClient.instance()
-                                .globalStateFlow
-                                .flatMapLatest { it.groupedUnreadChannels }
-                        }.collectAsState(initial = emptyMap())
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .systemBarsPadding(),
-                        ) {
-                            Column(Modifier.fillMaxSize()) {
-                                ScrollableTabRow(
-                                    selectedTabIndex = selected.ordinal,
-                                    edgePadding = 0.dp,
-                                ) {
-                                    ChannelGroup.entries.forEach { tab ->
-                                        Tab(
-                                            selected = selected == tab,
-                                            onClick = { selected = tab },
-                                            text = {
-                                                val unread = unreadByTab[tab.key] ?: 0
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Text(tab.label)
-                                                    if (unread > 0) {
-                                                        Spacer(Modifier.width(6.dp))
-                                                        UnreadCountIndicator(unreadCount = unread)
-                                                    }
-                                                }
-                                            },
-                                        )
-                                    }
-                                }
-                                val vm = when (selected) {
-                                    ChannelGroup.ALL -> allViewModel
-                                    ChannelGroup.NEW -> newViewModel
-                                    ChannelGroup.CURRENT -> currentViewModel
-                                    ChannelGroup.OLD -> oldViewModel
-                                }
+                @OptIn(ExperimentalCoroutinesApi::class)
+                val unreadByTab by remember {
+                    ChatClient.instance()
+                        .globalStateFlow
+                        .flatMapLatest { it.groupedUnreadChannels }
+                }.collectAsState(initial = emptyMap())
+
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                ) {
+                    Column(Modifier.fillMaxSize()) {
+                        TopBar(
+                            title = "Grouped Channels",
+                            onMarkAllRead = ::markAllRead,
+                            onCreateChannel = ::createChannel,
+                        )
+
+                        val vm = when (selected) {
+                            ChannelGroup.ALL -> allViewModel
+                            ChannelGroup.NEW -> newViewModel
+                            ChannelGroup.CURRENT -> currentViewModel
+                            ChannelGroup.OLD -> oldViewModel
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            ChatTheme {
                                 key(selected) {
                                     ChannelList(
                                         modifier = Modifier.fillMaxSize(),
@@ -150,14 +136,21 @@ class MainActivity : ComponentActivity() {
                                             startActivity(
                                                 ChannelActivity.createIntent(
                                                     this@MainActivity,
-                                                    channel.cid
-                                                )
+                                                    channel.cid,
+                                                ),
                                             )
                                         },
                                     )
                                 }
                             }
                         }
+
+                        BottomTabBar(
+                            tabs = ChannelGroup.entries,
+                            selected = selected,
+                            unreadByTab = unreadByTab,
+                            onSelect = { selected = it },
+                        )
                     }
                 }
             }
@@ -177,11 +170,204 @@ class MainActivity : ComponentActivity() {
                 },
             )
     }
+
+    private fun markAllRead() {
+        ChatClient.instance()
+            .markAllRead()
+            .enqueue(
+                onSuccess = {
+                    Log.d("MainActivity", "Marked all channels as read")
+                },
+                onError = {
+                    Log.e("MainActivity", "Failed to mark all channels as read")
+                },
+            )
+    }
+
+    private fun createChannel() {
+        val client = ChatClient.instance()
+        val currentUserId = client.getCurrentUser()?.id ?: return
+        val id = "new-channel-${System.currentTimeMillis()}"
+        val name = "New Channel ${DateTimeFormatter.ISO_LOCAL_TIME.format(java.time.LocalTime.now())}"
+        val channelClient = client.channel("messaging", id)
+        channelClient.create(
+            memberIds = listOf(currentUserId, "member_02"),
+            extraData = mapOf(
+                "name" to name,
+                "group" to "new",
+            ),
+        ).enqueue(
+            onSuccess = { channel ->
+                Log.d("MainActivity", "Created channel ${channel.cid}")
+            },
+            onError = {
+                Log.e("MainActivity", "Failed to create channel: $it")
+            },
+        )
+    }
 }
 
-private enum class ChannelGroup(val key: String, val label: String) {
-    ALL("all", "All"),
-    NEW("new", "New"),
-    CURRENT("current", "Current"),
-    OLD("old", "Old"),
+@Composable
+private fun TopBar(
+    title: String,
+    onMarkAllRead: () -> Unit,
+    onCreateChannel: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 2.dp,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onMarkAllRead) {
+                    Icon(
+                        imageVector = Icons.Filled.CheckCircle,
+                        contentDescription = "Mark all read",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                IconButton(onClick = onCreateChannel) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Create new channel",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BottomTabBar(
+    tabs: List<ChannelGroup>,
+    selected: ChannelGroup,
+    unreadByTab: Map<String, Int>,
+    onSelect: (ChannelGroup) -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 8.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            tabs.forEach { tab ->
+                BottomTabItem(
+                    tab = tab,
+                    selected = tab == selected,
+                    unread = unreadByTab[tab.key] ?: 0,
+                    onClick = { onSelect(tab) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BottomTabItem(
+    tab: ChannelGroup,
+    selected: Boolean,
+    unread: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val containerColor by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            Color.Transparent
+        },
+        label = "tab-bg",
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        },
+        label = "tab-fg",
+    )
+
+    Box(
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = containerColor,
+            ) {
+                Box(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    BadgedBox(
+                        badge = {
+                            if (unread > 0) {
+                                Badge(
+                                    containerColor = Color(0xFFFF3B30),
+                                    contentColor = Color.White,
+                                ) {
+                                    Text(
+                                        text = if (unread > 99) "99+" else unread.toString(),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = tab.label,
+                            tint = contentColor,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = tab.label,
+                fontSize = 12.sp,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                color = contentColor,
+            )
+        }
+    }
+}
+
+private enum class ChannelGroup(
+    val key: String,
+    val label: String,
+    val icon: ImageVector,
+) {
+    ALL("all", "All", Icons.Filled.Inbox),
+    NEW("new", "New", Icons.Filled.AutoAwesome),
+    CURRENT("current", "Current", Icons.AutoMirrored.Filled.Chat),
+    OLD("old", "Old", Icons.Filled.Archive),
 }
