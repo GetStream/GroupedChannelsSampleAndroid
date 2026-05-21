@@ -44,7 +44,7 @@ private val AvatarPalettes: List<Pair<Color, Color>> = listOf(
     Color(0xFFF7971E) to Color(0xFFFFD200),
 )
 
-fun avatarGradient(seed: String): Brush {
+private fun avatarGradient(seed: String): Brush {
     val (start, end) = AvatarPalettes[(seed.hashCode().toUInt() % AvatarPalettes.size.toUInt()).toInt()]
     return Brush.linearGradient(listOf(start, end))
 }

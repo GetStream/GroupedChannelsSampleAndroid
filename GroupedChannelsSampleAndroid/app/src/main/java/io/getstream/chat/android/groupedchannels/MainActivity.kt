@@ -26,10 +26,15 @@ import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,11 +57,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import io.getstream.chat.android.client.ChatClient
+import io.getstream.chat.android.compose.ui.channels.list.ChannelItem
 import io.getstream.chat.android.compose.ui.channels.list.ChannelList
 import io.getstream.chat.android.compose.ui.theme.ChatTheme
 import io.getstream.chat.android.compose.viewmodel.channels.ChannelListViewModel
 import io.getstream.chat.android.compose.viewmodel.channels.ChannelViewModelFactory
+import io.getstream.chat.android.groupedchannels.ui.Avatar
+import io.getstream.chat.android.groupedchannels.ui.initials
 import io.getstream.chat.android.groupedchannels.ui.theme.GroupedChannelsSampleAndroidTheme
+import io.getstream.chat.android.models.Channel
+import io.getstream.chat.android.models.ChannelCapabilities
 import io.getstream.chat.android.state.extensions.globalStateFlow
 import io.getstream.result.call.enqueue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -114,10 +124,17 @@ class MainActivity : ComponentActivity() {
                         .background(MaterialTheme.colorScheme.background),
                 ) {
                     Column(Modifier.fillMaxSize()) {
+                        val currentUser by remember {
+                            ChatClient.instance().clientState.user
+                        }.collectAsState(initial = null)
+                        val availableUsers = remember(currentUser) {
+                            LoginUser.all.filter { it.id != currentUser?.id }
+                        }
                         TopBar(
                             title = "Grouped Channels",
                             onMarkAllRead = ::markAllRead,
-                            onCreateChannel = ::createChannel,
+                            availableUsers = availableUsers,
+                            onCreateChannelWith = ::createChannelWith,
                         )
 
                         val vm = when (selected) {
@@ -129,15 +146,35 @@ class MainActivity : ComponentActivity() {
                         Box(modifier = Modifier.weight(1f)) {
                             ChatTheme {
                                 key(selected) {
+                                    val openChannel: (Channel) -> Unit = { channel ->
+                                        startActivity(
+                                            ChannelActivity.createIntent(
+                                                this@MainActivity,
+                                                channel.cid,
+                                            ),
+                                        )
+                                    }
                                     ChannelList(
                                         modifier = Modifier.fillMaxSize(),
                                         viewModel = vm,
-                                        onChannelClick = { channel ->
-                                            startActivity(
-                                                ChannelActivity.createIntent(
-                                                    this@MainActivity,
-                                                    channel.cid,
-                                                ),
+                                        onChannelClick = openChannel,
+                                        channelContent = { itemState ->
+                                            val user by vm.user.collectAsState()
+                                            ChannelItem(
+                                                modifier = Modifier.animateItem(),
+                                                channelItem = itemState,
+                                                currentUser = user,
+                                                onChannelClick = openChannel,
+                                                onChannelLongClick = { vm.selectChannel(it) },
+                                                trailingContent = { state ->
+                                                    with(ChatTheme.componentFactory) {
+                                                        ChannelItemTrailingContent(
+                                                            channelItem = state,
+                                                            currentUser = user,
+                                                        )
+                                                    }
+                                                    ChannelGroupMenu(channel = state.channel)
+                                                },
                                             )
                                         },
                                     )
@@ -156,63 +193,31 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    private fun initGroupedChannels() {
-        ChatClient.instance()
-            .queryGroupedChannels(watch = true)
-            .enqueue(
-                onSuccess = { grouped ->
-                    // No action needed, state/db is prefilled automatically
-                    Log.d("MainActivity", "Prefill grouped channels: ${grouped.groups.keys}")
-                },
-                onError = {
-                    Log.e("MainActivity", "Failed to query grouped channels for prefill")
-                },
-            )
-    }
-
-    private fun markAllRead() {
-        ChatClient.instance()
-            .markAllRead()
-            .enqueue(
-                onSuccess = {
-                    Log.d("MainActivity", "Marked all channels as read")
-                },
-                onError = {
-                    Log.e("MainActivity", "Failed to mark all channels as read")
-                },
-            )
-    }
-
-    private fun createChannel() {
-        val client = ChatClient.instance()
-        val currentUserId = client.getCurrentUser()?.id ?: return
-        val id = "new-channel-${System.currentTimeMillis()}"
-        val name = "New Channel ${DateTimeFormatter.ISO_LOCAL_TIME.format(java.time.LocalTime.now())}"
-        val channelClient = client.channel("messaging", id)
-        channelClient.create(
-            memberIds = listOf(currentUserId, "member_02"),
-            extraData = mapOf(
-                "name" to name,
-                "group" to "new",
-            ),
-        ).enqueue(
-            onSuccess = { channel ->
-                Log.d("MainActivity", "Created channel ${channel.cid}")
-            },
-            onError = {
-                Log.e("MainActivity", "Failed to create channel: $it")
-            },
-        )
-    }
 }
+
+private enum class ChannelGroup(
+    val key: String,
+    val label: String,
+    val icon: ImageVector,
+) {
+    ALL("all", "All", Icons.Filled.Inbox),
+    NEW("new", "New", Icons.Filled.AutoAwesome),
+    CURRENT("current", "Current", Icons.AutoMirrored.Filled.Chat),
+    OLD("old", "Old", Icons.Filled.Archive),
+}
+
+private val UnreadBadgeColor = Color(0xFFFF3B30)
+
+// region Composables
 
 @Composable
 private fun TopBar(
     title: String,
     onMarkAllRead: () -> Unit,
-    onCreateChannel: () -> Unit,
+    availableUsers: List<LoginUser>,
+    onCreateChannelWith: (LoginUser) -> Unit,
 ) {
+    var createMenuExpanded by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -240,14 +245,75 @@ private fun TopBar(
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                IconButton(onClick = onCreateChannel) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = "Create new channel",
-                        tint = MaterialTheme.colorScheme.onSurface,
+                Box {
+                    IconButton(
+                        onClick = { createMenuExpanded = true },
+                        enabled = availableUsers.isNotEmpty(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "Create new channel",
+                            tint = if (availableUsers.isNotEmpty()) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+                            },
+                        )
+                    }
+                    CreateChannelMenu(
+                        expanded = createMenuExpanded,
+                        users = availableUsers,
+                        onDismiss = { createMenuExpanded = false },
+                        onUserSelected = {
+                            createMenuExpanded = false
+                            onCreateChannelWith(it)
+                        },
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CreateChannelMenu(
+    expanded: Boolean,
+    users: List<LoginUser>,
+    onDismiss: () -> Unit,
+    onUserSelected: (LoginUser) -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Text(
+                text = "New channel",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "Pick a user to start a 1:1 channel with",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+        }
+        HorizontalDivider()
+        users.forEach { user ->
+            DropdownMenuItem(
+                text = { Text(user.name) },
+                leadingIcon = {
+                    Avatar(
+                        seed = user.id,
+                        initials = user.name.initials(),
+                        modifier = Modifier.size(28.dp),
+                        fontSize = 11.sp,
+                    )
+                },
+                onClick = { onUserSelected(user) },
+            )
         }
     }
 }
@@ -329,7 +395,7 @@ private fun BottomTabItem(
                         badge = {
                             if (unread > 0) {
                                 Badge(
-                                    containerColor = Color(0xFFFF3B30),
+                                    containerColor = UnreadBadgeColor,
                                     contentColor = Color.White,
                                 ) {
                                     Text(
@@ -361,13 +427,140 @@ private fun BottomTabItem(
     }
 }
 
-private enum class ChannelGroup(
-    val key: String,
-    val label: String,
-    val icon: ImageVector,
-) {
-    ALL("all", "All", Icons.Filled.Inbox),
-    NEW("new", "New", Icons.Filled.AutoAwesome),
-    CURRENT("current", "Current", Icons.AutoMirrored.Filled.Chat),
-    OLD("old", "Old", Icons.Filled.Archive),
+@Composable
+private fun ChannelGroupMenu(channel: Channel) {
+    var expanded by rememberSaveable(channel.cid) { mutableStateOf(false) }
+    val canUpdate = ChannelCapabilities.UPDATE_CHANNEL in channel.ownCapabilities
+    val currentGroup = channel.extraData["group"] as? String
+
+    Box {
+        IconButton(
+            onClick = { expanded = true },
+            enabled = canUpdate,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.GridView,
+                contentDescription = "Move to group",
+                tint = if (canUpdate) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+                },
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Text(
+                    text = "Move to group",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "Pick which group this channel belongs to",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+            }
+            HorizontalDivider()
+            ChannelGroup.entries
+                .filter { it != ChannelGroup.ALL }
+                .forEach { group ->
+                    DropdownMenuItem(
+                        text = { Text(group.label) },
+                        leadingIcon = {
+                            if (group.key == currentGroup) {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = null,
+                                )
+                            } else {
+                                Spacer(Modifier.size(24.dp))
+                            }
+                        },
+                        onClick = {
+                            expanded = false
+                            moveChannelToGroup(channel, group.key)
+                        },
+                    )
+                }
+        }
+    }
 }
+
+// endregion
+
+// region Business logic
+
+private fun initGroupedChannels() {
+    ChatClient.instance()
+        .queryGroupedChannels(watch = true)
+        .enqueue(
+            onSuccess = { grouped ->
+                // No action needed, state/db is prefilled automatically
+                Log.d("MainActivity", "Prefill grouped channels: ${grouped.groups.keys}")
+            },
+            onError = {
+                Log.e("MainActivity", "Failed to query grouped channels for prefill")
+            },
+        )
+}
+
+private fun markAllRead() {
+    ChatClient.instance()
+        .markAllRead()
+        .enqueue(
+            onSuccess = {
+                Log.d("MainActivity", "Marked all channels as read")
+            },
+            onError = {
+                Log.e("MainActivity", "Failed to mark all channels as read")
+            },
+        )
+}
+
+private fun createChannelWith(otherUser: LoginUser) {
+    val client = ChatClient.instance()
+    val currentUserId = client.getCurrentUser()?.id ?: return
+    val id = "new-channel-${System.currentTimeMillis()}"
+    val name = "New Channel ${DateTimeFormatter.ISO_LOCAL_TIME.format(java.time.LocalTime.now())}"
+    val channelClient = client.channel("messaging", id)
+    channelClient.create(
+        memberIds = listOf(currentUserId, otherUser.id),
+        extraData = mapOf(
+            "name" to name,
+            "group" to "new",
+        ),
+    ).enqueue(
+        onSuccess = { channel ->
+            Log.d("MainActivity", "Created channel ${channel.cid} with ${otherUser.id}")
+        },
+        onError = {
+            Log.e("MainActivity", "Failed to create channel: $it")
+        },
+    )
+}
+
+private fun moveChannelToGroup(channel: Channel, groupKey: String) {
+    ChatClient.instance()
+        .updateChannelPartial(
+            channelType = channel.type,
+            channelId = channel.id,
+            set = mapOf("group" to groupKey),
+            unset = emptyList(),
+        )
+        .enqueue(
+            onSuccess = {
+                Log.d("MainActivity", "Channel ${channel.cid} moved to '$groupKey'")
+            },
+            onError = {
+                Log.e("MainActivity", "Failed to move channel ${channel.cid}: $it")
+            },
+        )
+}
+
+// endregion

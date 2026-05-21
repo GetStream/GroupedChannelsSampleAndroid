@@ -9,12 +9,6 @@ data class LoginUser(
     val token: String,
 ) {
     companion object {
-        val bench = LoginUser(
-            id = "bench-bq-0",
-            name = "bench-bq-0",
-            token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYmVuY2gtYnEtMCJ9._GNHNHTR4WyCLTHfoSisYNdXC3sDorPVwRPcb6bwdBQ",
-        )
-
         val member01 = LoginUser(
             id = "member_01",
             name = "member_01",
@@ -33,6 +27,6 @@ data class LoginUser(
             token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoibWVtYmVyXzAzIn0.G5e_HucwuVmWKB6NjuE-izAltTxH_k-AyY5RlAo-2VY",
         )
 
-        val all: List<LoginUser> = listOf(bench, member01, member02, member03)
+        val all: List<LoginUser> = listOf(member01, member02, member03)
     }
 }

@@ -43,7 +43,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -91,7 +90,7 @@ private fun LoginScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var selected by remember { mutableStateOf<LoginUser?>(null) }
+    var selected by remember { mutableStateOf(users.firstOrNull()) }
     var connecting by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -213,11 +212,6 @@ private fun LoginScreen(
                 )
             }
         }
-    }
-
-    LaunchedEffect(Unit) {
-        // Default selection for convenience.
-        if (selected == null) selected = users.firstOrNull()
     }
 }
 
