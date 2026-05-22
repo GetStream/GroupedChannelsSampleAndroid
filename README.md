@@ -2,7 +2,7 @@
 
 ### Setup
 
-Snapshot version: **6.37.5-202605211156-SNAPSHOT**
+Snapshot version: **6.38.1-202605221530-SNAPSHOT**
 
 To register the snapshot repository in your project, add the following line to the repositories block of your `settings.gradle.kts`:
 
@@ -13,8 +13,8 @@ maven { url = uri("https://central.sonatype.com/repository/maven-snapshots/") }
 Then, to include the Stream Chat in you project, add the following lines to you app `build.gradle` dependencies block (or via the `libs.versions.toml` catalog):
 
 ```kotlin
-implementation("io.getstream:stream-chat-android-compose:6.37.5-202605211156-SNAPSHOT")
-implementation("io.getstream:stream-chat-android-offline:6.37.5-202605211156-SNAPSHOT")
+implementation("io.getstream:stream-chat-android-compose:6.38.1-202605221530-SNAPSHOT")
+implementation("io.getstream:stream-chat-android-offline:6.38.1-202605221530-SNAPSHOT")
 ```
 
 ### QueryGroupedChannels operation
@@ -24,24 +24,28 @@ The `queryGroupedChannels` operation is defined on the `ChatClient`:
 ```kotlin
 @CheckResult
 public fun queryGroupedChannels(
+    groups: List<String>,
     limit: Int? = null,
     watch: Boolean = false,
     presence: Boolean = false,
 ): Call<GroupedChannels>
 ```
 
-Calling it fetches the first page of each server-side group (`all`, `new`, `current`, `old`) in a single round-trip. The result is persisted into the state/database, so any `ChannelListViewModel` bound to one of those group keys is populated without a separate `queryChannels` call.
+Calling it fetches the first page of each requested server-side group (e.g. `all`, `new`, `current`, `old`) in a single round-trip. The `groups` parameter is required and must contain at least one group name; duplicates are silently de-duplicated. The result is persisted into the state/database, so any `ChannelListViewModel` bound to one of those group keys is populated without a separate `queryChannels` call.
 
 ```kotlin
 ChatClient.instance()
-    .queryGroupedChannels(watch = true)
+    .queryGroupedChannels(
+        groups = listOf("all", "new", "current", "old"),
+        watch = true,
+    )
     .enqueue(
         onSuccess = { grouped ->
             // No action needed — state/db is prefilled automatically.
-            Log.d("MainActivity", "Prefill grouped channels: ${grouped.groups.keys}")
+            Log.d("ChatManager", "Prefill grouped channels: ${grouped.groups.keys}")
         },
         onError = {
-            Log.e("MainActivity", "Failed to query grouped channels for prefill")
+            Log.e("ChatManager", "Failed to query grouped channels for prefill")
         },
     )
 ```
