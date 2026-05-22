@@ -31,7 +31,7 @@ public fun queryGroupedChannels(
 ): Call<GroupedChannels>
 ```
 
-Calling it fetches the first page of each requested server-side group (e.g. `all`, `new`, `current`, `old`) in a single round-trip. The `groups` parameter is required and must contain at least one group name; duplicates are silently de-duplicated. The result is persisted into the state/database, so any `ChannelListViewModel` bound to one of those group keys is populated without a separate `queryChannels` call.
+Calling it fetches the first page of each requested server-side group in a single round-trip. The `groups` parameter is required and must contain at least one group name; duplicates are silently de-duplicated. The group names are arbitrary strings chosen by the caller — this sample happens to use `all`, `new`, `current`, and `old`, but any names defined on the server side can be passed in. The result is persisted into the state/database, so any `ChannelListViewModel` bound to one of the requested group keys is populated without a separate `queryChannels` call.
 
 ```kotlin
 ChatClient.instance()
@@ -52,9 +52,11 @@ ChatClient.instance()
 
 ### ChannelViewModelFactory setup
 
-Each tab (group) is backed by its own `ChannelListViewModel`. The factory takes a single `groupKey` argument identifying the server-side group; the SDK uses that key to resolve the filter, sort and event-matching logic for the corresponding group.
+Each tab (group) is backed by its own `ChannelListViewModel`. The factory takes a single `groupKey` argument identifying the server-side group; the SDK uses that key to resolve the filter, sort and event-matching logic for the corresponding group. The `groupKey` value must match one of the group names configured on the server side and requested in `queryGroupedChannels`.
 
 **Note: Instantiating `ChannelListViewModel` will NOT automatically call `ChatClient.queryGroupedChannels` - you have to do that manually to prepopulate the data.**
+
+The example below uses `all`, `new`, `current`, and `old` as illustration — substitute the group keys your backend exposes.
 
 ```kotlin
 // One factory per group
@@ -67,7 +69,7 @@ private val oldFactory     by lazy { ChannelViewModelFactory(groupKey = "old") }
 private val allViewModel: ChannelListViewModel by lazy {
     ViewModelProvider(this, allFactory)["all", ChannelListViewModel::class.java]
 }
-// ... same for new / current / old
+// ... same for the remaining groups
 ```
 
 Combined with `queryGroupedChannels`, a single network call populates every tab.
@@ -82,7 +84,7 @@ ChatClient.instance()
     .flatMapLatest { it.groupedUnreadChannels }
 ```
 
-The `groupedUnreadChannels` is a `Map` keyed by the group name (`all`, `new`, `current`, `old`), with values equal to the current unread count of the group.
+The `groupedUnreadChannels` is a `Map` keyed by the group name (matching whatever groups were requested via `queryGroupedChannels`, e.g. `all`, `new`, `current`, `old` in this sample), with values equal to the current unread count of the group.
 
 ### Event matching
 
