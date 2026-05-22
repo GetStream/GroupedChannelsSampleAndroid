@@ -55,7 +55,10 @@ object ChatManager {
      */
     fun prefillGroupedChannels() {
         ChatClient.instance()
-            .queryGroupedChannels(watch = true)
+            .queryGroupedChannels(
+                groups = ChannelGroup.entries.map { it.name.lowercase() },
+                watch = true,
+            )
             .enqueue(
                 onSuccess = { grouped ->
                     // No action needed, state/db is prefilled automatically
