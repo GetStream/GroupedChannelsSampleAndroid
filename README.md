@@ -2,7 +2,7 @@
 
 ### Setup
 
-Snapshot version: **6.38.1-202605221530-SNAPSHOT**
+Snapshot version: **6.38.1-202605271127**
 
 To register the snapshot repository in your project, add the following line to the repositories block of your `settings.gradle.kts`:
 
@@ -13,8 +13,8 @@ maven { url = uri("https://central.sonatype.com/repository/maven-snapshots/") }
 Then, to include the Stream Chat in you project, add the following lines to you app `build.gradle` dependencies block (or via the `libs.versions.toml` catalog):
 
 ```kotlin
-implementation("io.getstream:stream-chat-android-compose:6.38.1-202605221530-SNAPSHOT")
-implementation("io.getstream:stream-chat-android-offline:6.38.1-202605221530-SNAPSHOT")
+implementation("io.getstream:stream-chat-android-compose:6.38.1-202605271127-SNAPSHOT")
+implementation("io.getstream:stream-chat-android-offline:6.38.1-202605271127-SNAPSHOT")
 ```
 
 ### QueryGroupedChannels operation
