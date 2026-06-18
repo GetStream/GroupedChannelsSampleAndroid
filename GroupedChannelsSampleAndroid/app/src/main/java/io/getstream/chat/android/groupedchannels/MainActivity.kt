@@ -41,13 +41,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import io.getstream.chat.android.client.ChatClient
+import io.getstream.chat.android.compose.R
+import io.getstream.chat.android.compose.ui.channels.info.SelectedChannelMenu
 import io.getstream.chat.android.compose.ui.channels.list.ChannelItem
 import io.getstream.chat.android.compose.ui.channels.list.ChannelList
+import io.getstream.chat.android.compose.ui.components.SimpleDialog
+import io.getstream.chat.android.compose.ui.components.channels.ChannelOptionItemVisibility
+import io.getstream.chat.android.compose.ui.theme.ChannelOptionsTheme
 import io.getstream.chat.android.compose.ui.theme.ChatTheme
 import io.getstream.chat.android.compose.viewmodel.channels.ChannelListViewModel
 import io.getstream.chat.android.compose.viewmodel.channels.ChannelViewModelFactory
@@ -56,6 +62,7 @@ import io.getstream.chat.android.groupedchannels.ui.CreateChannelMenu
 import io.getstream.chat.android.groupedchannels.ui.theme.GroupedChannelsSampleAndroidTheme
 import io.getstream.chat.android.models.Channel
 import io.getstream.chat.android.state.extensions.globalStateFlow
+import io.getstream.chat.android.ui.common.state.channels.actions.DeleteConversation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 
@@ -130,7 +137,18 @@ class MainActivity : ComponentActivity() {
                             ChannelGroup.OLD -> oldViewModel
                         }
                         Box(modifier = Modifier.weight(1f)) {
-                            ChatTheme {
+                            ChatTheme(
+                                channelOptionsTheme = ChannelOptionsTheme.defaultTheme(
+                                    optionVisibility = ChannelOptionItemVisibility(
+                                        isViewInfoVisible = false,
+                                        isLeaveChannelVisible = false,
+                                        isMuteChannelVisible = false,
+                                        isArchiveChannelVisible = false,
+                                        isPinChannelVisible = false,
+                                        isDeleteChannelVisible = true,
+                                    ),
+                                ),
+                            ) {
                                 key(selected) {
                                     val openChannel: (Channel) -> Unit = { channel ->
                                         startActivity(
@@ -140,38 +158,75 @@ class MainActivity : ComponentActivity() {
                                             ),
                                         )
                                     }
-                                    ChannelList(
-                                        modifier = Modifier.fillMaxSize(),
-                                        viewModel = vm,
-                                        onChannelClick = openChannel,
-                                        channelContent = { itemState ->
-                                            val user by vm.user.collectAsState()
-                                            ChannelItem(
-                                                modifier = Modifier.animateItem(),
-                                                channelItem = itemState,
-                                                currentUser = user,
-                                                onChannelClick = openChannel,
-                                                onChannelLongClick = { vm.selectChannel(it) },
-                                                trailingContent = { state ->
-                                                    with(ChatTheme.componentFactory) {
-                                                        ChannelItemTrailingContent(
-                                                            channelItem = state,
-                                                            currentUser = user,
-                                                        )
-                                                    }
-                                                    ChannelGroupMenu(
-                                                        channel = state.channel,
-                                                        onMoveTo = { group ->
-                                                            ChatManager.moveChannelToGroup(
-                                                                state.channel,
-                                                                group.key,
+                                    val user by vm.user.collectAsState()
+                                    Box(modifier = Modifier.fillMaxSize()) {
+                                        ChannelList(
+                                            modifier = Modifier.fillMaxSize(),
+                                            viewModel = vm,
+                                            onChannelClick = openChannel,
+                                            channelContent = { itemState ->
+                                                ChannelItem(
+                                                    modifier = Modifier.animateItem(),
+                                                    channelItem = itemState,
+                                                    currentUser = user,
+                                                    onChannelClick = openChannel,
+                                                    onChannelLongClick = { vm.selectChannel(it) },
+                                                    trailingContent = { state ->
+                                                        with(ChatTheme.componentFactory) {
+                                                            ChannelItemTrailingContent(
+                                                                channelItem = state,
+                                                                currentUser = user,
                                                             )
-                                                        },
-                                                    )
-                                                },
+                                                        }
+                                                        ChannelGroupMenu(
+                                                            channel = state.channel,
+                                                            onMoveTo = { group ->
+                                                                ChatManager.moveChannelToGroup(
+                                                                    state.channel,
+                                                                    group.key,
+                                                                )
+                                                            },
+                                                        )
+                                                    },
+                                                )
+                                            },
+                                        )
+
+                                        val selectedChannel by vm.selectedChannel
+                                        selectedChannel?.let { channel ->
+                                            SelectedChannelMenu(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .align(Alignment.BottomCenter),
+                                                selectedChannel = channel,
+                                                isMuted = vm.isChannelMuted(channel.cid),
+                                                currentUser = user,
+                                                onChannelOptionClick = vm::performChannelAction,
+                                                onDismiss = vm::dismissChannelAction,
                                             )
-                                        },
-                                    )
+                                        }
+
+                                        val activeAction = vm.activeChannelAction
+                                        if (activeAction is DeleteConversation) {
+                                            SimpleDialog(
+                                                modifier = Modifier.padding(16.dp),
+                                                title = stringResource(
+                                                    id = R.string.stream_compose_selected_channel_menu_delete_conversation_confirmation_title,
+                                                ),
+                                                message = stringResource(
+                                                    id = R.string.stream_compose_selected_channel_menu_delete_conversation_confirmation_message,
+                                                    ChatTheme.channelNameFormatter.formatChannelName(
+                                                        activeAction.channel,
+                                                        user,
+                                                    ),
+                                                ),
+                                                onPositiveAction = {
+                                                    vm.deleteConversation(activeAction.channel)
+                                                },
+                                                onDismiss = { vm.dismissChannelAction() },
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
