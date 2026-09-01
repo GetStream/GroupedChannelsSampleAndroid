@@ -6,9 +6,6 @@ import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.logger.ChatLogLevel
 import io.getstream.chat.android.models.Channel
 import io.getstream.chat.android.models.User
-import io.getstream.chat.android.offline.plugin.factory.StreamOfflinePluginFactory
-import io.getstream.chat.android.state.plugin.config.StatePluginConfig
-import io.getstream.chat.android.state.plugin.factory.StreamStatePluginFactory
 import io.getstream.result.call.enqueue
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -22,7 +19,7 @@ object ChatManager {
     private const val API_KEY = "vrvdwv6pk4yz"
 
     /**
-     * Initializes the ChatClient with offline and state plugins, then connects the user.
+     * Initializes the ChatClient, then connects the user.
      */
     fun initializeAndConnect(
         appContext: Context,
@@ -30,15 +27,8 @@ object ChatManager {
         onComplete: () -> Unit,
         onError: () -> Unit,
     ) {
-        val state = StreamStatePluginFactory(
-            config = StatePluginConfig(),
-            appContext = appContext,
-        )
-        val offline = StreamOfflinePluginFactory(
-            appContext = appContext,
-        )
+        // State and offline plugins are set up by the SDK; offline is on by default.
         val chatClient = ChatClient.Builder(API_KEY, appContext)
-            .withPlugins(state, offline)
             .logLevel(ChatLogLevel.ALL)
             .build()
         chatClient.connectUser(

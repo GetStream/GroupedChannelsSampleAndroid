@@ -5,9 +5,9 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import io.getstream.chat.android.compose.ui.messages.MessagesScreen
+import io.getstream.chat.android.compose.ui.messages.ChannelScreen
 import io.getstream.chat.android.compose.ui.theme.ChatTheme
-import io.getstream.chat.android.compose.viewmodel.messages.MessagesViewModelFactory
+import io.getstream.chat.android.compose.viewmodel.messages.ChannelViewModelFactory
 
 /**
  * Minimum-feature Channel screen.
@@ -19,7 +19,7 @@ class ChannelActivity : ComponentActivity() {
     }
 
     private val factory by lazy {
-        MessagesViewModelFactory(
+        ChannelViewModelFactory(
             context = this,
             channelId = cid,
         )
@@ -29,7 +29,7 @@ class ChannelActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ChatTheme {
-                MessagesScreen(
+                ChannelScreen(
                     viewModelFactory = factory,
                     onBackPressed = { finish() },
                 )

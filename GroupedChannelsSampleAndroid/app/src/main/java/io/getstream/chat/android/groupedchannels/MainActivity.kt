@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,44 +42,44 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import io.getstream.chat.android.client.ChatClient
-import io.getstream.chat.android.compose.R
-import io.getstream.chat.android.compose.ui.channels.info.SelectedChannelMenu
-import io.getstream.chat.android.compose.ui.channels.list.ChannelItem
+import io.getstream.chat.android.client.api.state.globalStateFlow
 import io.getstream.chat.android.compose.ui.channels.list.ChannelList
 import io.getstream.chat.android.compose.ui.components.SimpleDialog
-import io.getstream.chat.android.compose.ui.components.channels.ChannelOptionItemVisibility
-import io.getstream.chat.android.compose.ui.theme.ChannelOptionsTheme
+import io.getstream.chat.android.compose.ui.components.channels.ChannelOptionsVisibility
+import io.getstream.chat.android.compose.ui.components.channels.buildDefaultChannelActions
+import io.getstream.chat.android.compose.ui.theme.ChannelItemTrailingContentParams
+import io.getstream.chat.android.compose.ui.theme.ChannelListConfig
+import io.getstream.chat.android.compose.ui.theme.ChannelMenuParams
+import io.getstream.chat.android.compose.ui.theme.ChatComponentFactory
 import io.getstream.chat.android.compose.ui.theme.ChatTheme
+import io.getstream.chat.android.compose.ui.theme.ChatUiConfig
 import io.getstream.chat.android.compose.viewmodel.channels.ChannelListViewModel
-import io.getstream.chat.android.compose.viewmodel.channels.ChannelViewModelFactory
+import io.getstream.chat.android.compose.viewmodel.channels.ChannelListViewModelFactory
 import io.getstream.chat.android.groupedchannels.ui.ChannelGroupMenu
 import io.getstream.chat.android.groupedchannels.ui.CreateChannelMenu
 import io.getstream.chat.android.groupedchannels.ui.theme.GroupedChannelsSampleAndroidTheme
 import io.getstream.chat.android.models.Channel
-import io.getstream.chat.android.state.extensions.globalStateFlow
-import io.getstream.chat.android.ui.common.state.channels.actions.DeleteConversation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 
 class MainActivity : ComponentActivity() {
 
     private val allFactory by lazy {
-        ChannelViewModelFactory(groupKey = ChannelGroup.ALL.key)
+        ChannelListViewModelFactory(groupKey = ChannelGroup.ALL.key)
     }
     private val newFactory by lazy {
-        ChannelViewModelFactory(groupKey = ChannelGroup.NEW.key)
+        ChannelListViewModelFactory(groupKey = ChannelGroup.NEW.key)
     }
     private val currentFactory by lazy {
-        ChannelViewModelFactory(groupKey = ChannelGroup.CURRENT.key)
+        ChannelListViewModelFactory(groupKey = ChannelGroup.CURRENT.key)
     }
     private val oldFactory by lazy {
-        ChannelViewModelFactory(groupKey = ChannelGroup.OLD.key)
+        ChannelListViewModelFactory(groupKey = ChannelGroup.OLD.key)
     }
 
     private val allViewModel: ChannelListViewModel by lazy {
@@ -138,16 +139,20 @@ class MainActivity : ComponentActivity() {
                         }
                         Box(modifier = Modifier.weight(1f)) {
                             ChatTheme(
-                                channelOptionsTheme = ChannelOptionsTheme.defaultTheme(
-                                    optionVisibility = ChannelOptionItemVisibility(
-                                        isViewInfoVisible = false,
-                                        isLeaveChannelVisible = false,
-                                        isMuteChannelVisible = false,
-                                        isArchiveChannelVisible = false,
-                                        isPinChannelVisible = false,
-                                        isDeleteChannelVisible = true,
+                                config = ChatUiConfig(
+                                    channelList = ChannelListConfig(
+                                        optionsVisibility = ChannelOptionsVisibility(
+                                            isViewInfoVisible = false,
+                                            isLeaveChannelVisible = false,
+                                            isMuteChannelVisible = false,
+                                            isMuteUserVisible = false,
+                                            isArchiveChannelVisible = false,
+                                            isPinChannelVisible = false,
+                                            isDeleteChannelVisible = true,
+                                        ),
                                     ),
                                 ),
+                                componentFactory = remember { GroupedChannelsComponentFactory },
                             ) {
                                 key(selected) {
                                     val openChannel: (Channel) -> Unit = { channel ->
@@ -164,65 +169,35 @@ class MainActivity : ComponentActivity() {
                                             modifier = Modifier.fillMaxSize(),
                                             viewModel = vm,
                                             onChannelClick = openChannel,
-                                            channelContent = { itemState ->
-                                                ChannelItem(
-                                                    modifier = Modifier.animateItem(),
-                                                    channelItem = itemState,
-                                                    currentUser = user,
-                                                    onChannelClick = openChannel,
-                                                    onChannelLongClick = { vm.selectChannel(it) },
-                                                    trailingContent = { state ->
-                                                        with(ChatTheme.componentFactory) {
-                                                            ChannelItemTrailingContent(
-                                                                channelItem = state,
-                                                                currentUser = user,
-                                                            )
-                                                        }
-                                                        ChannelGroupMenu(
-                                                            channel = state.channel,
-                                                            onMoveTo = { group ->
-                                                                ChatManager.moveChannelToGroup(
-                                                                    state.channel,
-                                                                    group.key,
-                                                                )
-                                                            },
-                                                        )
-                                                    },
-                                                )
-                                            },
+                                            onChannelLongClick = { vm.selectChannel(it) },
                                         )
 
                                         val selectedChannel by vm.selectedChannel
                                         selectedChannel?.let { channel ->
-                                            SelectedChannelMenu(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .align(Alignment.BottomCenter),
-                                                selectedChannel = channel,
-                                                isMuted = vm.isChannelMuted(channel.cid),
-                                                currentUser = user,
-                                                onChannelOptionClick = vm::performChannelAction,
-                                                onDismiss = vm::dismissChannelAction,
+                                            ChatTheme.componentFactory.ChannelMenu(
+                                                params = ChannelMenuParams(
+                                                    selectedChannel = channel,
+                                                    currentUser = user,
+                                                    channelActions = buildDefaultChannelActions(
+                                                        selectedChannel = channel,
+                                                        ownCapabilities = channel.ownCapabilities,
+                                                        viewModel = vm,
+                                                        onViewInfoAction = { vm.dismissChannelAction() },
+                                                    ),
+                                                    onChannelOptionConfirm = vm::executeOrConfirm,
+                                                    onDismiss = vm::dismissChannelAction,
+                                                ),
                                             )
                                         }
 
-                                        val activeAction = vm.activeChannelAction
-                                        if (activeAction is DeleteConversation) {
+                                        // Confirmation for destructive actions; the action itself carries the copy.
+                                        val popup = vm.activeChannelAction?.confirmationPopup
+                                        if (popup != null) {
                                             SimpleDialog(
                                                 modifier = Modifier.padding(16.dp),
-                                                title = stringResource(
-                                                    id = R.string.stream_compose_selected_channel_menu_delete_conversation_confirmation_title,
-                                                ),
-                                                message = stringResource(
-                                                    id = R.string.stream_compose_selected_channel_menu_delete_conversation_confirmation_message,
-                                                    ChatTheme.channelNameFormatter.formatChannelName(
-                                                        activeAction.channel,
-                                                        user,
-                                                    ),
-                                                ),
-                                                onPositiveAction = {
-                                                    vm.deleteConversation(activeAction.channel)
-                                                },
+                                                title = popup.title,
+                                                message = popup.message,
+                                                onPositiveAction = { vm.confirmPendingAction() },
                                                 onDismiss = { vm.dismissChannelAction() },
                                             )
                                         }
@@ -423,3 +398,26 @@ private fun BottomTabItem(
 }
 
 // endregion
+
+/**
+ * Renders the SDK's default channel item trailing content, plus the menu that moves a channel
+ * between groups. In v7 the channel item is customised through the component factory rather than
+ * through a [ChannelList] content slot.
+ */
+private object GroupedChannelsComponentFactory : ChatComponentFactory {
+
+    // Every member of ChatComponentFactory has a default body, so an empty implementation
+    // gives us the SDK's own rendering to delegate to.
+    private val default = object : ChatComponentFactory {}
+
+    @Composable
+    override fun RowScope.ChannelItemTrailingContent(params: ChannelItemTrailingContentParams) {
+        with(default) { ChannelItemTrailingContent(params) }
+        ChannelGroupMenu(
+            channel = params.channelItem.channel,
+            onMoveTo = { group ->
+                ChatManager.moveChannelToGroup(params.channelItem.channel, group.key)
+            },
+        )
+    }
+}
